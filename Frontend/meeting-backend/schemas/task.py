@@ -15,6 +15,7 @@ class TaskResponse(BaseModel):
     """Schema for task response"""
     id: int
     note_id: int
+    note_filename: Optional[str] = None
     task: str
     deadline: Optional[str]
     status: str

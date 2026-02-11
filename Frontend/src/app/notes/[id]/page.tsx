@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { apiClient } from "@/lib/api";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Trash2, Loader2 } from "lucide-react";
+import { ArrowLeft, Trash2, Loader2, Download } from "lucide-react";
 import TranscriptViewer from "@/components/TranscriptViewer";
 import SummaryCard from "@/components/SummaryCard";
 import TaskList from "@/components/TaskList";
@@ -72,6 +72,42 @@ export default function NoteDetailPage() {
         }
     };
 
+    const handleExport = () => {
+        if (!note) return;
+
+        const content = `
+Title: ${note.filename}
+Date: ${new Date(note.created_at).toLocaleString()}
+--------------------------------------------------
+
+SUMMARY
+--------------------------------------------------
+${note.summary || 'No summary available.'}
+
+KEY POINTS
+--------------------------------------------------
+${Array.isArray(note.key_points) ? note.key_points.map((p: string) => `- ${p}`).join('\n') : 'No key points available.'}
+
+ACTION ITEMS
+--------------------------------------------------
+${tasks.length > 0 ? tasks.map(t => `[${t.status === 'completed' ? 'x' : ' '}] ${t.task} ${t.deadline ? `(Due: ${t.deadline})` : ''}`).join('\n') : 'No action items.'}
+
+TRANSCRIPT
+--------------------------------------------------
+${note.transcript}
+        `.trim();
+
+        const blob = new Blob([content], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${note.filename.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_export.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    };
+
     const formatDate = (dateString: string) => {
         const date = new Date(dateString);
         return date.toLocaleDateString("en-US", {
@@ -121,20 +157,31 @@ export default function NoteDetailPage() {
                         <p className="text-sm text-neutral-500">{formatDate(note.created_at)}</p>
                     </div>
                 </div>
-                <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={handleDelete}
-                    disabled={deleting}
-                    className="gap-2"
-                >
-                    {deleting ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                        <Trash2 className="h-4 w-4" />
-                    )}
-                    Delete
-                </Button>
+                <div className="flex gap-2">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleExport}
+                        className="gap-2"
+                    >
+                        <Download className="h-4 w-4" />
+                        Export
+                    </Button>
+                    <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={handleDelete}
+                        disabled={deleting}
+                        className="gap-2"
+                    >
+                        {deleting ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                            <Trash2 className="h-4 w-4" />
+                        )}
+                        Delete
+                    </Button>
+                </div>
             </div>
 
             {/* Voice Commands */}

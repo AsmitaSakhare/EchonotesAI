@@ -2,15 +2,18 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckCircle2, Circle, Calendar } from "lucide-react";
+import { CheckCircle2, Circle, Calendar, FileText } from "lucide-react";
 import { apiClient } from "@/lib/api";
 import { useState } from "react";
+import Link from "next/link";
 
-interface Task {
+export interface Task {
     id: number;
     task: string;
     deadline: string | null;
     status: string;
+    note_id?: number;
+    note_filename?: string;
 }
 
 interface TaskListProps {
@@ -64,8 +67,8 @@ export default function TaskList({ tasks, onTaskUpdate }: TaskListProps) {
                             <div
                                 key={task.id}
                                 className={`flex items-start gap-3 p-3 rounded-lg border transition-colors ${task.status === "completed"
-                                        ? "border-neutral-800 bg-neutral-900/30"
-                                        : "border-neutral-700 bg-neutral-900/50"
+                                    ? "border-neutral-800 bg-neutral-900/30"
+                                    : "border-neutral-700 bg-neutral-900/50"
                                     }`}
                             >
                                 <button
@@ -83,8 +86,8 @@ export default function TaskList({ tasks, onTaskUpdate }: TaskListProps) {
                                 <div className="flex-1 min-w-0">
                                     <p
                                         className={`${task.status === "completed"
-                                                ? "line-through text-neutral-500"
-                                                : "text-neutral-200"
+                                            ? "line-through text-neutral-500"
+                                            : "text-neutral-200"
                                             }`}
                                     >
                                         {task.task}
@@ -93,8 +96,8 @@ export default function TaskList({ tasks, onTaskUpdate }: TaskListProps) {
                                     {task.deadline && (
                                         <div
                                             className={`flex items-center gap-1.5 mt-1.5 text-xs ${isOverdue(task.deadline) && task.status !== "completed"
-                                                    ? "text-red-400"
-                                                    : "text-neutral-500"
+                                                ? "text-red-400"
+                                                : "text-neutral-500"
                                                 }`}
                                         >
                                             <Calendar className="h-3 w-3" />
@@ -103,6 +106,16 @@ export default function TaskList({ tasks, onTaskUpdate }: TaskListProps) {
                                                 <span className="text-red-400 font-medium ml-1">(Overdue)</span>
                                             )}
                                         </div>
+                                    )}
+
+                                    {task.note_filename && task.note_id && (
+                                        <Link
+                                            href={`/notes/${task.note_id}`}
+                                            className="flex items-center gap-1.5 mt-1 text-xs text-blue-400 hover:text-blue-300 transition-colors w-fit"
+                                        >
+                                            <FileText className="h-3 w-3" />
+                                            <span>{task.note_filename}</span>
+                                        </Link>
                                     )}
                                 </div>
                             </div>

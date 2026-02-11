@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List
 
 from database import get_db
-from models import Task
+from models import Task, Note
 from schemas import TaskResponse, TaskUpdate
 
 router = APIRouter()
@@ -14,7 +14,14 @@ async def get_all_tasks(db: Session = Depends(get_db)):
     """
     Get all tasks across all notes
     """
-    tasks = db.query(Task).order_by(Task.created_at.desc()).all()
+    results = db.query(Task, Note.filename).join(Note, Task.note_id == Note.id).order_by(Task.created_at.desc()).all()
+    
+    tasks = []
+    for task, filename in results:
+        task_dict = task.__dict__
+        task_dict["note_filename"] = filename
+        tasks.append(task_dict)
+        
     return tasks
 
 
