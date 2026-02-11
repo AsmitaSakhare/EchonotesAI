@@ -1,27 +1,54 @@
 import os
 import json
+import google.generativeai as genai
 from openai import OpenAI
 from dotenv import load_dotenv
-from typing import Dict, List
+from typing import Dict, List, Any
 
 load_dotenv()
 
-# Initialize OpenAI client
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+# Get API Key
+API_KEY = os.getenv("OPENAI_API_KEY")
+
+# Determine Provider based on Key Format
+PROVIDER = "openai" if API_KEY and API_KEY.startswith("sk-") else "gemini"
+
+# Initialize Client
+client = None
+if PROVIDER == "openai":
+    client = OpenAI(api_key=API_KEY)
+else:
+    genai.configure(api_key=API_KEY)
+
+def get_gemini_json(prompt: str) -> Dict[str, Any]:
+    """Helper to get JSON from Gemini"""
+    model = genai.GenerativeModel('gemini-1.5-flash')
+    response = model.generate_content(prompt + "\n\nIMPORTANT: Return ONLY valid JSON. Do not use markdown code blocks.")
+    try:
+        # Clean up response if it contains markdown code blocks
+        text = response.text.strip()
+        if text.startswith("```json"):
+            text = text[7:]
+        if text.endswith("```"):
+            text = text[:-3]
+        return json.loads(text.strip())
+    except Exception as e:
+        print(f"Gemini JSON Parse Error: {e}")
+        # Fallback empty structure or re-raise
+        return {}
+
+def get_gemini_text(prompt: str) -> str:
+    """Helper to get text from Gemini"""
+    model = genai.GenerativeModel('gemini-1.5-flash')
+    response = model.generate_content(prompt)
+    return response.text.strip()
 
 
 async def generate_summary(transcript: str) -> Dict[str, any]:
     """
-    Generate summary and key points from transcript using GPT
-    
-    Args:
-        transcript: The meeting transcript text
-        
-    Returns:
-        Dictionary with 'summary' and 'key_points' (list)
+    Generate summary and key points from transcript using GPT or Gemini
     """
-    try:
-        prompt = f"""You are an AI assistant that analyzes meeting transcripts.
+    prompt = f"""You are an AI assistant that analyzes meeting transcripts.
 
 Given the following meeting transcript, provide:
 1. A concise summary (2-3 sentences)
@@ -36,35 +63,30 @@ Respond in JSON format:
   "key_points": ["Point 1", "Point 2", "Point 3"]
 }}
 """
-        
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": "You are a helpful assistant that analyzes meeting transcripts and returns structured JSON."},
-                {"role": "user", "content": prompt}
-            ],
-            response_format={"type": "json_object"}
-        )
-        
-        result = json.loads(response.choices[0].message.content)
-        return result
-    
+
+    try:
+        if PROVIDER == "openai":
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": "You are a helpful assistant that analyzes meeting transcripts and returns structured JSON."},
+                    {"role": "user", "content": prompt}
+                ],
+                response_format={"type": "json_object"}
+            )
+            return json.loads(response.choices[0].message.content)
+        else:
+            return get_gemini_json(prompt)
+
     except Exception as e:
-        raise Exception(f"GPT summarization failed: {str(e)}")
+        raise Exception(f"{PROVIDER} summarization failed: {str(e)}")
 
 
 async def extract_tasks(transcript: str) -> List[Dict[str, str]]:
     """
-    Extract action items and tasks from transcript using GPT
-    
-    Args:
-        transcript: The meeting transcript text
-        
-    Returns:
-        List of tasks with deadlines in ISO format (YYYY-MM-DD)
+    Extract action items and tasks from transcript using GPT or Gemini
     """
-    try:
-        prompt = f"""You are an AI assistant that extracts action items from meeting transcripts.
+    prompt = f"""You are an AI assistant that extracts action items from meeting transcripts.
 
 Given the following meeting transcript, extract all action items and tasks mentioned.
 
@@ -85,32 +107,29 @@ Respond in JSON format:
 
 If no tasks are found, return an empty tasks array.
 """
-        
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": "You are a helpful assistant that extracts tasks from meeting transcripts and returns structured JSON with ISO date format."},
-                {"role": "user", "content": prompt}
-            ],
-            response_format={"type": "json_object"}
-        )
-        
-        result = json.loads(response.choices[0].message.content)
-        return result.get("tasks", [])
-    
+
+    try:
+        if PROVIDER == "openai":
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": "You are a helpful assistant that extracts tasks from meeting transcripts and returns structured JSON with ISO date format."},
+                    {"role": "user", "content": prompt}
+                ],
+                response_format={"type": "json_object"}
+            )
+            return json.loads(response.choices[0].message.content).get("tasks", [])
+        else:
+            result = get_gemini_json(prompt)
+            return result.get("tasks", [])
+
     except Exception as e:
-        raise Exception(f"GPT task extraction failed: {str(e)}")
+        raise Exception(f"{PROVIDER} task extraction failed: {str(e)}")
 
 
 async def detect_sentiment(transcript: str) -> str:
     """
     Detect the overall tone of the meeting transcript
-    
-    Args:
-        transcript: The meeting transcript text
-        
-    Returns:
-        One of: Positive, Neutral, Tense, Urgent
     """
     prompt = f"""
 You are an AI meeting analyst.
@@ -139,17 +158,19 @@ Transcript:
 """
 
     try:
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0
-        )
-
-        sentiment = response.choices[0].message.content.strip()
+        sentiment = ""
+        if PROVIDER == "openai":
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0
+            )
+            sentiment = response.choices[0].message.content.strip()
+        else:
+            sentiment = get_gemini_text(prompt)
 
         if sentiment not in ["Positive", "Neutral", "Tense", "Urgent"]:
             return "Neutral"
-
         return sentiment
 
     except Exception:
@@ -159,16 +180,8 @@ Transcript:
 async def process_voice_command(command: str, transcript: str) -> str:
     """
     Process voice command using stored transcript context
-    
-    Args:
-        command: The user's voice command
-        transcript: The stored meeting transcript for context
-        
-    Returns:
-        AI-generated response to the command
     """
-    try:
-        prompt = f"""You are an AI assistant helping a user interact with their meeting notes.
+    prompt = f"""You are an AI assistant helping a user interact with their meeting notes.
 
 Meeting Transcript:
 {transcript}
@@ -177,30 +190,27 @@ User Command: {command}
 
 Provide a helpful, concise response to the user's command based on the meeting transcript.
 """
-        
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": "You are a helpful assistant that answers questions about meeting transcripts."},
-                {"role": "user", "content": prompt}
-            ]
-        )
-        
-        return response.choices[0].message.content
-    
+
+    try:
+        if PROVIDER == "openai":
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": "You are a helpful assistant that answers questions about meeting transcripts."},
+                    {"role": "user", "content": prompt}
+                ]
+            )
+            return response.choices[0].message.content
+        else:
+            return get_gemini_text(prompt)
+
     except Exception as e:
-        raise Exception(f"GPT voice command processing failed: {str(e)}")
+        raise Exception(f"{PROVIDER} voice command processing failed: {str(e)}")
 
 
 async def detect_language(transcript: str) -> str:
     """
     Detect the primary language of the meeting transcript
-    
-    Args:
-        transcript: The meeting transcript text
-        
-    Returns:
-        Detected language name (e.g., English, Hindi, Marathi, etc.) or 'Unknown'
     """
     prompt = f"""
 Detect the primary language of the following meeting transcript.
@@ -213,13 +223,15 @@ Transcript:
 """
 
     try:
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0
-        )
-
-        return response.choices[0].message.content.strip()
+        if PROVIDER == "openai":
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0
+            )
+            return response.choices[0].message.content.strip()
+        else:
+            return get_gemini_text(prompt)
 
     except Exception:
         return "Unknown"
@@ -228,13 +240,6 @@ Transcript:
 async def translate_text(text: str, target_language: str) -> str:
     """
     Translate text into a target language
-    
-    Args:
-        text: The text to translate
-        target_language: The target language
-        
-    Returns:
-        Translated text
     """
     prompt = f"""
 Translate the following text into {target_language}.
@@ -246,13 +251,15 @@ Text:
 """
 
     try:
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0
-        )
-
-        return response.choices[0].message.content.strip()
+        if PROVIDER == "openai":
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0
+            )
+            return response.choices[0].message.content.strip()
+        else:
+            return get_gemini_text(prompt)
 
     except Exception as e:
          raise Exception(f"Translation failed: {str(e)}")
