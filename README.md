@@ -4,6 +4,18 @@
 
 ---
 
+### 🎓 Capstone Project Details
+This project is the Capstone Project for **VIT Bhopal University**, developed by **Group Number 41** under the supervision of **Dr. Virendra Singh Khushwah**.
+
+**Team Members:**
+- **Asmita Sakhare** (22BSA10007)
+- **Nihalika Kumari** (22BSA10033)
+- **Vedika Vivek Gangil** (22BSA10001)
+- **Mehul Kumar** (22BSA10317)
+- **Sumit Kumar** (22BSA10024)
+
+---
+
 ## 🚀 Key Features
 
 ### 🎙️ Smart Recording & Transcription
@@ -130,5 +142,3 @@ Visit **http://localhost:3000** in your browser to start using EchoNotes AI.
 ## 🤝 Contributing
 Contributions are welcome! Please feel free to submit a Pull Request.
 
-## 📄 License
-This project is licensed under the MIT License.
