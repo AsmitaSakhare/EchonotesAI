@@ -7,7 +7,7 @@ import shutil
 
 from database import get_db
 from models import Note, Task
-from services import transcribe_audio, generate_summary, extract_tasks
+from services import transcribe_audio, generate_summary, extract_tasks, detect_sentiment, detect_language
 
 router = APIRouter()
 
@@ -22,10 +22,11 @@ async def transcribe_meeting(
     db: Session = Depends(get_db)
 ):
     """
-    Main endpoint: Upload audio → Whisper transcribe → GPT summarize → Extract tasks → Store in DB
+    Main endpoint: Upload audio → Whisper transcribe → GPT summarize → Extract tasks → Detect Sentiment + Language → Store in DB
     
     This is the core pipeline that processes meeting recordings.
     """
+    file_path = None
     try:
         # 1. Save uploaded audio file
         file_path = UPLOAD_DIR / file.filename
@@ -46,13 +47,21 @@ async def transcribe_meeting(
         # 5. Extract tasks using GPT
         tasks_data = await extract_tasks(transcript)
         
-        # 6. Store note in database
+        # 6. Detect Sentiment
+        sentiment = await detect_sentiment(transcript)
+
+        # 7. Detect Language
+        language = await detect_language(transcript)
+        
+        # 8. Store note in database
         note = Note(
             filename=file.filename,
             raw_transcript=raw_transcript,
             transcript=transcript,
             summary=summary,
-            key_points=key_points
+            key_points=key_points,
+            sentiment=sentiment,
+            language=language
         )
         db.add(note)
         db.commit()
@@ -87,6 +96,8 @@ async def transcribe_meeting(
             "summary": note.summary,
             "key_points": json.loads(note.key_points),
             "tasks": created_tasks,
+            "sentiment": note.sentiment,
+            "language": note.language,
             "created_at": note.created_at.isoformat()
         }
     

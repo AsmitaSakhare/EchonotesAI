@@ -23,6 +23,7 @@ import SummaryCard from "@/components/SummaryCard";
 import TaskList from "@/components/TaskList";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import VoiceCommandPanel from "@/components/VoiceCommandPanel";
 
 interface ProcessingResult {
   note_id: number;
@@ -31,6 +32,8 @@ interface ProcessingResult {
   summary: string;
   key_points: string[];
   tasks: Array<{ id: number; task: string; deadline: string | null; status: string }>;
+  sentiment?: string;
+  language?: string;
 }
 
 export default function HomePage() {
@@ -46,7 +49,7 @@ export default function HomePage() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Status management for recording flow
+  // Status management
   useEffect(() => {
     if (result) {
       setStatus("Complete");
@@ -61,7 +64,7 @@ export default function HomePage() {
     }
   }, [audioUrl, recording, processing, result]);
 
-  // Recording Handlers
+  // Handlers
   const onStartRecording = async () => {
     try {
       setStatus(mode === "mic" ? "Requesting microphone…" : "Select tab/window to share…");
@@ -82,11 +85,10 @@ export default function HomePage() {
     if (!blob) return;
     const url = URL.createObjectURL(blob);
     setAudioUrl(url);
-    setUploadedFile(null); // Clear any uploaded file
+    setUploadedFile(null);
     setStatus("Ready to process");
   };
 
-  // Upload Handlers
   const onUploadClick = () => {
     fileInputRef.current?.click();
   };
@@ -94,12 +96,10 @@ export default function HomePage() {
   const onFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     if (!file.type.startsWith("audio/")) {
       setError("Please upload a valid audio file.");
       return;
     }
-
     const url = URL.createObjectURL(file);
     setAudioUrl(url);
     setUploadedFile(file);
@@ -108,21 +108,16 @@ export default function HomePage() {
     setActiveTab("upload");
   };
 
-  // Processing Handler
   const onProcess = async () => {
     if (!audioUrl) return;
-
     setProcessing(true);
     setError(null);
     setStatus("Uploading audio...");
-
     try {
       let fileToUpload: File;
-
       if (uploadedFile) {
         fileToUpload = uploadedFile;
       } else {
-        // Convert blob URL to File for recording
         const res = await fetch(audioUrl);
         const blob = await res.blob();
         fileToUpload = new File(
@@ -131,14 +126,11 @@ export default function HomePage() {
           { type: "audio/webm" }
         );
       }
-
       setStatus("Transcribing with Whisper...");
       const response = await apiClient.transcribeAudio(fileToUpload);
-
       setStatus("Analyzing with GPT...");
       setResult(response.data);
       setStatus("Complete");
-
     } catch (e: any) {
       console.error(e);
       setError(e.response?.data?.detail || "Processing failed. Please try again.");
@@ -161,32 +153,13 @@ export default function HomePage() {
   return (
     <div className="relative max-w-[1280px] mx-auto min-h-screen pb-20 space-y-16 animate-in fade-in slide-in-from-bottom-4 duration-700">
 
-      {/* Dynamic Background Effects */}
+      {/* Background Effects */}
       <div className="fixed inset-0 pointer-events-none">
-        {/* Main Glow Horizon */}
         <div className="absolute top-[20%] left-1/2 -translate-x-1/2 w-[800px] h-[300px] bg-indigo-500/10 rounded-full blur-[120px] opacity-40 mix-blend-screen animate-pulse-slow" />
         <div className="absolute top-[30%] left-1/3 w-[600px] h-[300px] bg-purple-500/10 rounded-full blur-[100px] opacity-30 mix-blend-screen animate-pulse-slow delay-700" />
-
-        {/* Golden Sunrise / Glitter Effect */}
         <div className="absolute top-[25%] left-1/2 -translate-x-1/2 w-[600px] h-[150px] bg-amber-500/20 rounded-[100%] blur-[60px] opacity-60 mix-blend-screen animate-pulse-slow delay-300" />
         <div className="absolute top-[30%] left-1/2 -translate-x-1/2 w-[300px] h-[100px] bg-orange-400/25 rounded-full blur-[50px] opacity-70 mix-blend-color-dodge" />
-
-        {/* Grid Pattern */}
         <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]" />
-
-        {/* Golden Dust / Glitter Particles */}
-        <div className="absolute top-[20%] left-[20%] w-1.5 h-1.5 bg-amber-200 rounded-full opacity-60 animate-pulse shadow-[0_0_10px_rgba(251,191,36,0.8)]" style={{ animationDelay: '1s' }} />
-        <div className="absolute top-[25%] right-[25%] w-1 h-1 bg-amber-100 rounded-full opacity-70 animate-pulse shadow-[0_0_8px_rgba(251,191,36,0.8)]" style={{ animationDelay: '0.5s' }} />
-        <div className="absolute top-[18%] right-[40%] w-1 h-1 bg-orange-200 rounded-full opacity-50 animate-pulse" style={{ animationDelay: '2.5s' }} />
-        <div className="absolute top-[30%] left-[35%] w-2 h-2 bg-yellow-100 rounded-full opacity-40 animate-pulse blur-[1px]" style={{ animationDelay: '1.2s' }} />
-        <div className="absolute top-[15%] left-[45%] w-1 h-1 bg-amber-300 rounded-full opacity-80 animate-pulse" style={{ animationDelay: '3s' }} />
-        <div className="absolute top-[28%] right-[15%] w-1.5 h-1.5 bg-orange-100 rounded-full opacity-50 animate-pulse blur-[1px]" style={{ animationDelay: '4s' }} />
-
-        {/* Stars / Particles - Simulated with divs for now (simple solution) */}
-        <div className="absolute top-10 left-[10%] w-1 h-1 bg-white rounded-full opacity-20 animate-pulse" style={{ animationDelay: '0s' }} />
-        <div className="absolute top-20 left-[20%] w-1.5 h-1.5 bg-indigo-300 rounded-full opacity-10 animate-pulse" style={{ animationDelay: '2s' }} />
-        <div className="absolute top-40 right-[15%] w-1 h-1 bg-purple-300 rounded-full opacity-20 animate-pulse" style={{ animationDelay: '1s' }} />
-        <div className="absolute top-60 right-[30%] w-1.5 h-1.5 bg-white rounded-full opacity-10 animate-pulse" style={{ animationDelay: '3s' }} />
       </div>
 
       {/* Hero Section */}
@@ -195,11 +168,9 @@ export default function HomePage() {
           <Sparkles className="h-3 w-3 text-indigo-400" />
           <span className="tracking-wide">AI-POWERED MEETING INTELLIGENCE</span>
         </div>
-
         <h1 className="text-5xl md:text-7xl font-black tracking-tight text-white drop-shadow-2xl">
           Your AI Meeting <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 via-white to-indigo-300 animate-shimmer bg-[length:200%_100%]">Assistant</span>
         </h1>
-
         <p className="text-lg md:text-xl text-neutral-400 max-w-2xl mx-auto leading-relaxed text-balance">
           Record, transcribe, and analyze your meetings instantly.
           Upload audio or capture directly from your browser with <span className="text-neutral-200 font-semibold">privacy-first AI</span>.
@@ -209,52 +180,14 @@ export default function HomePage() {
       {/* Main Action Grid */}
       {!result ? (
         <div className="relative grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 px-4 z-10">
-
-          {/* Record Card - Red Glow */}
-          <ActionCard
-            icon={Mic}
-            title="Record Audio"
-            description="Capture microphone or system audio."
-            onClick={() => setActiveTab("record")}
-            active={activeTab === "record"}
-            color="red"
-          />
-
-          {/* Upload Card - Blue Glow */}
-          <ActionCard
-            icon={Upload}
-            title="Upload File"
-            description="Process existing audio recordings."
-            onClick={onUploadClick}
-            active={activeTab === "upload"}
-            color="blue"
-          />
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={onFileSelected}
-            className="hidden"
-            accept="audio/*"
-          />
-
-          {/* View Notes - Teal/Green Glow */}
+          <ActionCard icon={Mic} title="Record Audio" description="Capture microphone or system audio." onClick={() => setActiveTab("record")} active={activeTab === "record"} color="red" />
+          <ActionCard icon={Upload} title="Upload File" description="Process existing audio recordings." onClick={onUploadClick} active={activeTab === "upload"} color="blue" />
+          <input type="file" ref={fileInputRef} onChange={onFileSelected} className="hidden" accept="audio/*" />
           <Link href="/notes" className="group h-full w-full block">
-            <ActionCard
-              icon={LayoutGrid}
-              title="View Notes"
-              description="Access your past meeting history."
-              color="teal"
-            />
+            <ActionCard icon={LayoutGrid} title="View Notes" description="Access your past meeting history." color="teal" />
           </Link>
-
-          {/* Tasks - Amber/Orange Glow */}
           <Link href="/tasks" className="group h-full w-full block">
-            <ActionCard
-              icon={CheckSquare}
-              title="Tasks Dashboard"
-              description="Manage action items and deadlines."
-              color="amber"
-            />
+            <ActionCard icon={CheckSquare} title="Tasks Dashboard" description="Manage action items and deadlines." color="amber" />
           </Link>
         </div>
       ) : null}
@@ -263,7 +196,6 @@ export default function HomePage() {
       {(activeTab === "record" || audioUrl) && !result && (
         <div className="relative z-10 animate-in zoom-in-95 duration-500">
           <div className={`absolute inset-0 bg-gradient-to-r ${activeTab === 'record' ? 'from-red-500/10 to-indigo-500/10' : 'from-blue-500/10 to-sky-500/10'} blur-3xl opacity-20 -z-10 rounded-full`} />
-
           <Card className="border-white/10 bg-neutral-900/60 backdrop-blur-2xl shadow-2xl relative overflow-hidden">
             <CardHeader className="relative border-b border-white/5 pb-6">
               <CardTitle className="flex items-center gap-3 text-xl">
@@ -281,41 +213,21 @@ export default function HomePage() {
               </CardTitle>
               <CardDescription className="text-neutral-500 ml-6">{status}</CardDescription>
             </CardHeader>
-
             <CardContent className="space-y-8 pt-8 relative z-10">
-              {/* Recording Controls */}
               {activeTab === "record" && !audioUrl && (
                 <div className="space-y-12">
                   <div className="flex justify-center gap-8">
-                    <SourceSelector
-                      selected={mode === "mic"}
-                      onClick={() => setMode("mic")}
-                      icon={Mic}
-                      label="Microphone"
-                    />
-                    <SourceSelector
-                      selected={mode === "system"}
-                      onClick={() => setMode("system")}
-                      icon={Cpu}
-                      label="System Audio"
-                    />
+                    <SourceSelector selected={mode === "mic"} onClick={() => setMode("mic")} icon={Mic} label="Microphone" />
+                    <SourceSelector selected={mode === "system"} onClick={() => setMode("system")} icon={Cpu} label="System Audio" />
                   </div>
-
                   <div className="flex justify-center py-4">
                     {!recording ? (
-                      <button
-                        id="echonotes-record-btn"
-                        onClick={onStartRecording}
-                        className="group relative flex items-center justify-center h-24 w-24 rounded-full bg-gradient-to-b from-red-500 to-red-700 shadow-[0_0_50px_-10px_rgba(239,68,68,0.5)] hover:scale-105 hover:shadow-[0_0_70px_-10px_rgba(239,68,68,0.7)] transition-all duration-300 border-4 border-red-900/30"
-                      >
+                      <button id="echonotes-record-btn" onClick={onStartRecording} className="group relative flex items-center justify-center h-24 w-24 rounded-full bg-gradient-to-b from-red-500 to-red-700 shadow-[0_0_50px_-10px_rgba(239,68,68,0.5)] hover:scale-105 hover:shadow-[0_0_70px_-10px_rgba(239,68,68,0.7)] transition-all duration-300 border-4 border-red-900/30">
                         <Mic className="h-10 w-10 text-white drop-shadow-md group-hover:animate-pulse" />
                         <span className="absolute -bottom-12 text-xs font-bold text-neutral-400 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap tracking-wider uppercase">Click to Start</span>
                       </button>
                     ) : (
-                      <button
-                        onClick={onStopRecording}
-                        className="group relative flex items-center justify-center h-24 w-24 rounded-full bg-neutral-900 border-4 border-red-500/30 shadow-[0_0_40px_rgba(239,68,68,0.3)] hover:scale-105 transition-all duration-300"
-                      >
+                      <button onClick={onStopRecording} className="group relative flex items-center justify-center h-24 w-24 rounded-full bg-neutral-900 border-4 border-red-500/30 shadow-[0_0_40px_rgba(239,68,68,0.3)] hover:scale-105 transition-all duration-300">
                         <div className="h-10 w-10 rounded-lg bg-red-500 animate-pulse shadow-[0_0_20px_rgba(239,68,68,0.6)]" />
                         <span className="absolute -bottom-12 text-xs font-bold text-red-500 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap tracking-wider uppercase">Stop Recording</span>
                       </button>
@@ -323,8 +235,6 @@ export default function HomePage() {
                   </div>
                 </div>
               )}
-
-              {/* Audio Preview */}
               {audioUrl && (
                 <div className="space-y-8 max-w-2xl mx-auto">
                   <div className="bg-black/40 p-8 rounded-3xl border border-white/10 flex items-center gap-6 shadow-inner backdrop-blur-sm">
@@ -332,36 +242,17 @@ export default function HomePage() {
                       <Play className="h-7 w-7 text-indigo-400 ml-1" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-white truncate text-xl tracking-tight">
-                        {uploadedFile ? uploadedFile.name : `Meeting Recording (${mode})`}
-                      </p>
+                      <p className="font-semibold text-white truncate text-xl tracking-tight">{uploadedFile ? uploadedFile.name : `Meeting Recording (${mode})`}</p>
                       <p className="text-sm text-neutral-400 font-mono mt-2 flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
                         Ready to process • {mode}
                       </p>
                     </div>
                   </div>
-
                   <div className="flex justify-center gap-4 pt-4">
-                    <Button variant="ghost" onClick={onReset} disabled={processing} className="text-neutral-400 hover:text-white hover:bg-white/5 px-6">
-                      Cancel
-                    </Button>
-                    <Button
-                      onClick={onProcess}
-                      disabled={processing}
-                      className="bg-indigo-600 hover:bg-indigo-500 text-white min-w-[200px] h-12 text-base font-medium shadow-[0_0_20px_-5px_rgba(99,102,241,0.5)] hover:shadow-[0_0_30px_-5px_rgba(99,102,241,0.7)] transition-all rounded-xl"
-                    >
-                      {processing ? (
-                        <>
-                          <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                          {status === "Uploading audio..." ? "Uploading..." : "Processing..."}
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="mr-2 h-5 w-5" />
-                          Process Recording
-                        </>
-                      )}
+                    <Button variant="ghost" onClick={onReset} disabled={processing} className="text-neutral-400 hover:text-white hover:bg-white/5 px-6">Cancel</Button>
+                    <Button onClick={onProcess} disabled={processing} className="bg-indigo-600 hover:bg-indigo-500 text-white min-w-[200px] h-12 text-base font-medium shadow-[0_0_20px_-5px_rgba(99,102,241,0.5)] hover:shadow-[0_0_30px_-5px_rgba(99,102,241,0.7)] transition-all rounded-xl">
+                      {processing ? <><Loader2 className="mr-2 h-5 w-5 animate-spin" />{status === "Uploading audio..." ? "Uploading..." : "Processing..."}</> : <><Sparkles className="mr-2 h-5 w-5" />Process Recording</>}
                     </Button>
                   </div>
                 </div>
@@ -388,7 +279,14 @@ export default function HomePage() {
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-700 relative z-10">
           <div className="flex items-center justify-between pb-6 border-b border-white/5">
             <div>
-              <h2 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-neutral-400">Analysis Complete</h2>
+              <div className="flex items-center gap-3">
+                <h2 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-neutral-400">Analysis Complete</h2>
+                {result.language && (
+                  <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-neutral-800 text-neutral-400 border border-neutral-700">
+                    {result.language}
+                  </span>
+                )}
+              </div>
               <p className="text-neutral-500 mt-1">Here is exactly what happened in your meeting.</p>
             </div>
             <div className="flex gap-3">
@@ -401,9 +299,27 @@ export default function HomePage() {
             </div>
           </div>
 
-          <SummaryCard summary={result.summary} keyPoints={result.key_points} />
-          <TaskList tasks={result.tasks} />
-          <TranscriptViewer transcript={result.transcript} />
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2 space-y-8">
+              <SummaryCard
+                summary={result.summary}
+                keyPoints={result.key_points}
+                sentiment={result.sentiment}
+                noteId={result.note_id}
+              />
+              <TaskList tasks={result.tasks} />
+              <TranscriptViewer transcript={result.transcript} />
+            </div>
+            <div className="space-y-6">
+              <VoiceCommandPanel noteId={result.note_id} />
+              <div className="p-6 rounded-2xl border border-white/5 bg-neutral-900/30 backdrop-blur-sm">
+                <h3 className="font-semibold text-neutral-200 mb-2">Next Steps</h3>
+                <p className="text-sm text-neutral-400">
+                  You can now translate this summary, ask questions about the content, or verify the action items extracted.
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
@@ -430,6 +346,12 @@ export default function HomePage() {
               color="blue"
             />
             <FeatureHighlight
+              icon={LayoutGrid}
+              title="Language & Sentiment"
+              desc="Detects language, translates summaries, and analyzes meeting tone."
+              color="violet"
+            />
+            <FeatureHighlight
               icon={Command}
               title="Voice Commands"
               desc="Ask questions about your notes and get spoken answers instantly."
@@ -445,12 +367,6 @@ export default function HomePage() {
               icon={FileText}
               title="Export Ready"
               desc="Download clean, formatted text files of your meetings for easy sharing."
-              color="violet"
-            />
-            <FeatureHighlight
-              icon={Upload}
-              title="File Import"
-              desc="Upload existing audio files to process past meetings seamlessly."
               color="pink"
             />
           </div>

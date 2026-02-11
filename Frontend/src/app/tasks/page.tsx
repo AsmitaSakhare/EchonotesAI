@@ -27,18 +27,20 @@ export default function TasksPage() {
         fetchTasks();
     }, []);
 
+    const isOverdue = (deadline: string | null, status: string | undefined) => {
+        if (!deadline || status === "completed") return false;
+        const d = new Date(deadline);
+        const now = new Date();
+        now.setHours(0, 0, 0, 0);
+        return d < now;
+    };
+
     const getFilteredTasks = () => {
         const now = new Date();
         now.setHours(0, 0, 0, 0); // Start of today
 
         const next7Days = new Date(now);
         next7Days.setDate(now.getDate() + 7);
-
-        const isOverdue = (deadline: string | null) => {
-            if (!deadline) return false;
-            const d = new Date(deadline);
-            return d < now;
-        };
 
         const isDueSoon = (deadline: string | null) => {
             if (!deadline) return false;
@@ -56,7 +58,7 @@ export default function TasksPage() {
             filtered = tasks.filter(t => t.status !== "completed");
 
             if (filter === "overdue") {
-                filtered = filtered.filter(t => isOverdue(t.deadline));
+                filtered = filtered.filter(t => isOverdue(t.deadline, t.status));
             } else if (filter === "due-soon") {
                 filtered = filtered.filter(t => isDueSoon(t.deadline));
             }
@@ -72,8 +74,8 @@ export default function TasksPage() {
                 return b.id - a.id;
             }
 
-            const aOverdue = isOverdue(a.deadline);
-            const bOverdue = isOverdue(b.deadline);
+            const aOverdue = isOverdue(a.deadline, a.status);
+            const bOverdue = isOverdue(b.deadline, b.status);
 
             if (aOverdue && !bOverdue) return -1;
             if (!aOverdue && bOverdue) return 1;
@@ -96,7 +98,7 @@ export default function TasksPage() {
 
     const counts = {
         pending: tasks.filter(t => t.status !== "completed").length,
-        overdue: tasks.filter(t => t.status !== "completed" && t.deadline && new Date(t.deadline).getTime() < new Date().setHours(0, 0, 0, 0)).length,
+        overdue: tasks.filter(t => isOverdue(t.deadline, t.status)).length,
         dueSoon: tasks.filter(t => {
             if (t.status === "completed" || !t.deadline) return false;
             const d = new Date(t.deadline);

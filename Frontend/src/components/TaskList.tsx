@@ -6,6 +6,7 @@ import { CheckCircle2, Circle, Calendar, FileText } from "lucide-react";
 import { apiClient } from "@/lib/api";
 import { useState } from "react";
 import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 export interface Task {
     id: number;
@@ -25,11 +26,15 @@ export default function TaskList({ tasks, onTaskUpdate }: TaskListProps) {
     const [updatingTaskId, setUpdatingTaskId] = useState<number | null>(null);
 
     const toggleTaskStatus = async (taskId: number, currentStatus: string) => {
+        if (updatingTaskId === taskId) return;
         setUpdatingTaskId(taskId);
         try {
             const newStatus = currentStatus === "pending" ? "completed" : "pending";
+            // Optimistic update
             await apiClient.updateTaskStatus(taskId, newStatus);
-            onTaskUpdate?.();
+            if (onTaskUpdate) {
+                onTaskUpdate();
+            }
         } catch (error) {
             console.error("Failed to update task:", error);
         } finally {
@@ -37,92 +42,105 @@ export default function TaskList({ tasks, onTaskUpdate }: TaskListProps) {
         }
     };
 
-    const isOverdue = (deadline: string | null) => {
-        if (!deadline) return false;
+    const isOverdue = (deadline: string | null, status: string) => {
+        if (!deadline || status === "completed") return false;
         const deadlineDate = new Date(deadline);
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         return deadlineDate < today;
     };
 
-    const formatDeadline = (deadline: string | null) => {
+    const formatDate = (deadline: string | null) => {
         if (!deadline) return null;
-        const date = new Date(deadline);
-        return date.toLocaleDateString("en-US", {
+        return new Date(deadline).toLocaleDateString("en-US", {
             month: "short",
             day: "numeric",
-            year: "numeric",
         });
     };
 
     return (
-        <Card className="border-neutral-800 bg-neutral-900/50">
-            <CardHeader>
-                <CardTitle className="text-lg">Action Items</CardTitle>
+        <Card className="border-neutral-800 bg-neutral-900/50 backdrop-blur-sm">
+            <CardHeader className="pb-3">
+                <CardTitle className="text-lg font-semibold text-neutral-100 flex items-center gap-2">
+                    <CheckCircle2 className="h-5 w-5 text-indigo-400" />
+                    Action Items
+                </CardTitle>
             </CardHeader>
             <CardContent>
                 {tasks && tasks.length > 0 ? (
                     <div className="space-y-3">
-                        {tasks.map((task) => (
-                            <div
-                                key={task.id}
-                                className={`flex items-start gap-3 p-3 rounded-lg border transition-colors ${task.status === "completed"
-                                    ? "border-neutral-800 bg-neutral-900/30"
-                                    : "border-neutral-700 bg-neutral-900/50"
-                                    }`}
-                            >
-                                <button
-                                    onClick={() => toggleTaskStatus(task.id, task.status)}
-                                    disabled={updatingTaskId === task.id}
-                                    className="mt-0.5 shrink-0 hover:scale-110 transition-transform disabled:opacity-50"
-                                >
-                                    {task.status === "completed" ? (
-                                        <CheckCircle2 className="h-5 w-5 text-green-500" />
-                                    ) : (
-                                        <Circle className="h-5 w-5 text-neutral-500" />
+                        {tasks.map((task) => {
+                            const overdue = isOverdue(task.deadline, task.status);
+                            const completed = task.status === "completed";
+
+                            return (
+                                <div
+                                    key={task.id}
+                                    className={cn(
+                                        "group flex items-start gap-3 p-4 rounded-xl border transition-all duration-200",
+                                        completed
+                                            ? "bg-neutral-900/30 border-neutral-800/50"
+                                            : "bg-neutral-800/20 border-white/5 hover:bg-neutral-800/40 hover:border-white/10"
                                     )}
-                                </button>
-
-                                <div className="flex-1 min-w-0">
-                                    <p
-                                        className={`${task.status === "completed"
-                                            ? "line-through text-neutral-500"
-                                            : "text-neutral-200"
-                                            }`}
+                                >
+                                    <button
+                                        onClick={() => toggleTaskStatus(task.id, task.status)}
+                                        disabled={updatingTaskId === task.id}
+                                        className={cn(
+                                            "mt-0.5 shrink-0 transition-all duration-200 rounded-full",
+                                            completed ? "text-green-500" : "text-neutral-500 hover:text-neutral-300"
+                                        )}
                                     >
-                                        {task.task}
-                                    </p>
+                                        {completed ? (
+                                            <CheckCircle2 className="h-5 w-5 fill-current/10" />
+                                        ) : (
+                                            <Circle className="h-5 w-5" />
+                                        )}
+                                    </button>
 
-                                    {task.deadline && (
-                                        <div
-                                            className={`flex items-center gap-1.5 mt-1.5 text-xs ${isOverdue(task.deadline) && task.status !== "completed"
-                                                ? "text-red-400"
-                                                : "text-neutral-500"
-                                                }`}
-                                        >
-                                            <Calendar className="h-3 w-3" />
-                                            <span>{formatDeadline(task.deadline)}</span>
-                                            {isOverdue(task.deadline) && task.status !== "completed" && (
-                                                <span className="text-red-400 font-medium ml-1">(Overdue)</span>
+                                    <div className="flex-1 min-w-0 space-y-1">
+                                        <p className={cn(
+                                            "text-sm leading-relaxed transition-colors",
+                                            completed ? "text-neutral-500 line-through" : "text-neutral-200"
+                                        )}>
+                                            {task.task}
+                                        </p>
+
+                                        <div className="flex flex-wrap items-center gap-3">
+                                            {task.deadline && (
+                                                <div className={cn(
+                                                    "flex items-center gap-1.5 text-xs font-medium rounded-full px-2 py-0.5 border",
+                                                    overdue
+                                                        ? "text-red-400 bg-red-500/10 border-red-500/20"
+                                                        : completed
+                                                            ? "text-neutral-600 bg-neutral-900 border-neutral-800"
+                                                            : "text-neutral-400 bg-neutral-900/50 border-neutral-800"
+                                                )}>
+                                                    <Calendar className="h-3 w-3" />
+                                                    <span>{formatDate(task.deadline)}</span>
+                                                    {overdue && <span className="text-[10px] uppercase tracking-wider font-bold ml-1">Overdue</span>}
+                                                </div>
+                                            )}
+
+                                            {task.note_id && task.note_filename && (
+                                                <Link
+                                                    href={`/notes/${task.note_id}`}
+                                                    className="flex items-center gap-1.5 text-xs text-indigo-400/80 hover:text-indigo-300 hover:underline decoration-indigo-500/30 underline-offset-2 transition-colors"
+                                                >
+                                                    <FileText className="h-3 w-3" />
+                                                    <span className="truncate max-w-[150px]">{task.note_filename}</span>
+                                                </Link>
                                             )}
                                         </div>
-                                    )}
-
-                                    {task.note_filename && task.note_id && (
-                                        <Link
-                                            href={`/notes/${task.note_id}`}
-                                            className="flex items-center gap-1.5 mt-1 text-xs text-blue-400 hover:text-blue-300 transition-colors w-fit"
-                                        >
-                                            <FileText className="h-3 w-3" />
-                                            <span>{task.note_filename}</span>
-                                        </Link>
-                                    )}
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 ) : (
-                    <p className="text-neutral-500 text-sm">No action items found</p>
+                    <div className="text-center py-8">
+                        <p className="text-neutral-500 text-sm">No action items found.</p>
+                    </div>
                 )}
             </CardContent>
         </Card>

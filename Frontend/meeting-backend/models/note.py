@@ -15,6 +15,8 @@ class Note(Base):
     transcript = Column(Text, nullable=False)  # Cleaned/formatted version
     summary = Column(Text, nullable=True)  # AI-generated summary
     key_points = Column(Text, nullable=True)  # JSON array of key points
+    sentiment = Column(String(20), nullable=True, default="Neutral")  # Positive, Neutral, Tense, Urgent
+    language = Column(String(50), nullable=True)  # Detected language
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     def __repr__(self):

@@ -17,6 +17,9 @@ interface NoteDetail {
     raw_transcript: string;
     summary: string;
     key_points: string[];
+    sentiment?: string;
+    language?: string;
+    translated_summary?: string;
     created_at: string;
 }
 
@@ -78,11 +81,13 @@ export default function NoteDetailPage() {
         const content = `
 Title: ${note.filename}
 Date: ${new Date(note.created_at).toLocaleString()}
+Language: ${note.language || 'Unknown'}
 --------------------------------------------------
 
 SUMMARY
 --------------------------------------------------
 ${note.summary || 'No summary available.'}
+${note.translated_summary ? `\n\nTRANSLATED SUMMARY\n--------------------------------------------------\n${note.translated_summary}` : ''}
 
 KEY POINTS
 --------------------------------------------------
@@ -154,7 +159,14 @@ ${note.transcript}
                     </Button>
                     <div>
                         <h1 className="text-2xl font-semibold">{note.filename}</h1>
-                        <p className="text-sm text-neutral-500">{formatDate(note.created_at)}</p>
+                        <p className="text-sm text-neutral-500 flex items-center gap-2">
+                            {formatDate(note.created_at)}
+                            {note.language && (
+                                <span className="bg-neutral-800 px-2 py-0.5 rounded text-xs text-neutral-400">
+                                    {note.language}
+                                </span>
+                            )}
+                        </p>
                     </div>
                 </div>
                 <div className="flex gap-2">
@@ -188,7 +200,12 @@ ${note.transcript}
             <VoiceCommandPanel noteId={noteId} />
 
             {/* Summary */}
-            <SummaryCard summary={note.summary} keyPoints={note.key_points} />
+            <SummaryCard
+                summary={note.summary}
+                keyPoints={note.key_points}
+                sentiment={note.sentiment}
+                noteId={note.id}
+            />
 
             {/* Tasks */}
             <TaskList tasks={tasks} onTaskUpdate={fetchNoteDetails} />

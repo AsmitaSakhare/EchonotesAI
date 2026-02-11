@@ -11,6 +11,8 @@ interface Note {
   filename: string;
   summary: string | null;
   created_at: string;
+  sentiment?: string;
+  language?: string;
 }
 
 export default function NotesPage() {

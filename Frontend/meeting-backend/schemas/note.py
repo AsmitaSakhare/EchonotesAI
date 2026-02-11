@@ -10,6 +10,7 @@ class NoteCreate(BaseModel):
     transcript: str
     summary: Optional[str] = None
     key_points: Optional[str] = None  # JSON string
+    sentiment: Optional[str] = "Neutral"
 
 
 class NoteResponse(BaseModel):
@@ -20,6 +21,7 @@ class NoteResponse(BaseModel):
     transcript: str
     summary: Optional[str]
     key_points: Optional[str]
+    sentiment: Optional[str]
     created_at: datetime
 
     class Config:

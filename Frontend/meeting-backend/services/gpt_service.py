@@ -102,6 +102,60 @@ If no tasks are found, return an empty tasks array.
         raise Exception(f"GPT task extraction failed: {str(e)}")
 
 
+async def detect_sentiment(transcript: str) -> str:
+    """
+    Detect the overall tone of the meeting transcript
+    
+    Args:
+        transcript: The meeting transcript text
+        
+    Returns:
+        One of: Positive, Neutral, Tense, Urgent
+    """
+    prompt = f"""
+You are an AI meeting analyst.
+
+Analyze the OVERALL tone of this meeting transcript and classify it into EXACTLY ONE word from the list below:
+
+Positive
+Neutral
+Tense
+Urgent
+
+Definitions:
+- Positive → calm, productive, optimistic discussion
+- Neutral → normal informational or balanced discussion
+- Tense → disagreement, conflict, stress, pressure, frustration
+- Urgent → deadlines, critical issues, time-sensitive actions
+
+Rules:
+- Return ONLY one word from the list
+- No explanation
+- No punctuation
+- No extra text
+
+Transcript:
+{transcript}
+"""
+
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0
+        )
+
+        sentiment = response.choices[0].message.content.strip()
+
+        if sentiment not in ["Positive", "Neutral", "Tense", "Urgent"]:
+            return "Neutral"
+
+        return sentiment
+
+    except Exception:
+        return "Neutral"
+
+
 async def process_voice_command(command: str, transcript: str) -> str:
     """
     Process voice command using stored transcript context
@@ -136,3 +190,69 @@ Provide a helpful, concise response to the user's command based on the meeting t
     
     except Exception as e:
         raise Exception(f"GPT voice command processing failed: {str(e)}")
+
+
+async def detect_language(transcript: str) -> str:
+    """
+    Detect the primary language of the meeting transcript
+    
+    Args:
+        transcript: The meeting transcript text
+        
+    Returns:
+        Detected language name (e.g., English, Hindi, Marathi, etc.) or 'Unknown'
+    """
+    prompt = f"""
+Detect the primary language of the following meeting transcript.
+
+Return ONLY the language name in English (for example: English, Hindi, Marathi, French, etc.).
+No extra text.
+
+Transcript:
+{transcript}
+"""
+
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0
+        )
+
+        return response.choices[0].message.content.strip()
+
+    except Exception:
+        return "Unknown"
+
+
+async def translate_text(text: str, target_language: str) -> str:
+    """
+    Translate text into a target language
+    
+    Args:
+        text: The text to translate
+        target_language: The target language
+        
+    Returns:
+        Translated text
+    """
+    prompt = f"""
+Translate the following text into {target_language}.
+Keep meaning accurate and natural.
+Return only translated text.
+
+Text:
+{text}
+"""
+
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0
+        )
+
+        return response.choices[0].message.content.strip()
+
+    except Exception as e:
+         raise Exception(f"Translation failed: {str(e)}")
