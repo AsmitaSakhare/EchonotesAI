@@ -1,29 +1,55 @@
-# main.py
-from fastapi import FastAPI, UploadFile, File
+# main.py - FastAPI Application Entry Point
+import os
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from pathlib import Path
-import shutil
+from dotenv import load_dotenv
 
-app = FastAPI(title="Meeting Backend (upload demo)")
+from database import init_db
+from routes import transcribe_router, notes_router, tasks_router, commands_router
 
+# Load environment variables
+load_dotenv()
+
+# Initialize FastAPI app
+app = FastAPI(
+    title="EchoNotes AI Backend",
+    description="Local-first AI meeting assistant with Whisper transcription and GPT analysis",
+    version="1.0.0"
+)
+
+# Configure CORS
+CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-UPLOAD_DIR = Path("uploads")
-UPLOAD_DIR.mkdir(exist_ok=True)
+# Initialize database on startup
+@app.on_event("startup")
+async def startup_event():
+    """Initialize database tables on startup"""
+    init_db()
+    print("🚀 EchoNotes AI Backend started successfully")
 
+# Register routes
+app.include_router(transcribe_router, tags=["Transcription"])
+app.include_router(notes_router, tags=["Notes"])
+app.include_router(tasks_router, tags=["Tasks"])
+app.include_router(commands_router, tags=["Voice Commands"])
+
+# Health check endpoint
 @app.get("/")
-def root():
-    return {"ok": True}
+async def root():
+    """Health check endpoint"""
+    return {
+        "status": "ok",
+        "service": "EchoNotes AI Backend",
+        "version": "1.0.0",
+        "message": "Local-first AI meeting assistant is running"
+    }
 
-@app.post("/upload/single")
-async def upload_single(file: UploadFile = File(...)):
-    dest = UPLOAD_DIR / file.filename
-    with dest.open("wb") as f:
-        shutil.copyfileobj(file.file, f)
-    return {"saved": str(dest)}
+# Run with: uvicorn main:app --reload --port 5167
+
