@@ -38,6 +38,7 @@ interface ProcessingResult {
 
 export default function HomePage() {
   const [activeTab, setActiveTab] = useState<"record" | "upload" | null>(null);
+  const [scrollTrigger, setScrollTrigger] = useState(0);
   const [mode, setMode] = useState<RecorderMode>("mic");
   const { recording, start, stop } = useBrowserRecorder("audio/webm");
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
@@ -69,7 +70,7 @@ export default function HomePage() {
   useEffect(() => {
     const handleOpenRecorder = () => {
       setActiveTab("record");
-      // The scroll effect will trigger automatically due to activeTab changing
+      setScrollTrigger((c) => c + 1);
     };
 
     window.addEventListener("open-recorder", handleOpenRecorder);
@@ -83,7 +84,7 @@ export default function HomePage() {
         recordingSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
       }, 100);
     }
-  }, [activeTab]);
+  }, [activeTab, scrollTrigger]);
 
   // Handlers
   const onStartRecording = async () => {
@@ -201,7 +202,7 @@ export default function HomePage() {
       {/* Main Action Grid */}
       {!result ? (
         <div className="relative grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 px-4 z-10">
-          <ActionCard icon={Mic} title="Record Audio" description="Capture microphone or system audio." onClick={() => setActiveTab("record")} active={activeTab === "record"} color="red" />
+          <ActionCard icon={Mic} title="Record Audio" description="Capture microphone or system audio." onClick={() => { setActiveTab("record"); setScrollTrigger(c => c + 1); }} active={activeTab === "record"} color="red" />
           <ActionCard icon={Upload} title="Upload File" description="Process existing audio recordings." onClick={onUploadClick} active={activeTab === "upload"} color="blue" />
           <input type="file" ref={fileInputRef} onChange={onFileSelected} className="hidden" accept="audio/*" />
           <Link href="/notes" className="group h-full w-full block">
