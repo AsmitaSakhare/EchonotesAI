@@ -47,6 +47,7 @@ export default function HomePage() {
   const [result, setResult] = useState<ProcessingResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const recordingSectionRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Status management
@@ -63,6 +64,26 @@ export default function HomePage() {
       setStatus("Idle");
     }
   }, [audioUrl, recording, processing, result]);
+
+  // Listen for sidebar record button
+  useEffect(() => {
+    const handleOpenRecorder = () => {
+      setActiveTab("record");
+      // The scroll effect will trigger automatically due to activeTab changing
+    };
+
+    window.addEventListener("open-recorder", handleOpenRecorder);
+    return () => window.removeEventListener("open-recorder", handleOpenRecorder);
+  }, []);
+
+  // Scroll to recording section when active
+  useEffect(() => {
+    if (activeTab === "record" && recordingSectionRef.current) {
+      setTimeout(() => {
+        recordingSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 100);
+    }
+  }, [activeTab]);
 
   // Handlers
   const onStartRecording = async () => {
@@ -194,7 +215,7 @@ export default function HomePage() {
 
       {/* Active Recording / Preview Area */}
       {(activeTab === "record" || audioUrl) && !result && (
-        <div className="relative z-10 animate-in zoom-in-95 duration-500">
+        <div ref={recordingSectionRef} className="relative z-10 animate-in zoom-in-95 duration-500">
           <div className={`absolute inset-0 bg-gradient-to-r ${activeTab === 'record' ? 'from-red-500/10 to-indigo-500/10' : 'from-blue-500/10 to-sky-500/10'} blur-3xl opacity-20 -z-10 rounded-full`} />
           <Card className="border-white/10 bg-neutral-900/60 backdrop-blur-2xl shadow-2xl relative overflow-hidden">
             <CardHeader className="relative border-b border-white/5 pb-6">
@@ -220,7 +241,7 @@ export default function HomePage() {
                     <SourceSelector selected={mode === "mic"} onClick={() => setMode("mic")} icon={Mic} label="Microphone" />
                     <SourceSelector selected={mode === "system"} onClick={() => setMode("system")} icon={Cpu} label="System Audio" />
                   </div>
-                  <div className="flex justify-center py-4">
+                  <div className="flex justify-center py-4 pb-16">
                     {!recording ? (
                       <button id="echonotes-record-btn" onClick={onStartRecording} className="group relative flex items-center justify-center h-24 w-24 rounded-full bg-gradient-to-b from-red-500 to-red-700 shadow-[0_0_50px_-10px_rgba(239,68,68,0.5)] hover:scale-105 hover:shadow-[0_0_70px_-10px_rgba(239,68,68,0.7)] transition-all duration-300 border-4 border-red-900/30">
                         <Mic className="h-10 w-10 text-white drop-shadow-md group-hover:animate-pulse" />

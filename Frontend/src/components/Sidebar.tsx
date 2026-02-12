@@ -59,18 +59,7 @@ export default function Sidebar({
         {open ? <ChevronLeft className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
       </button>
 
-      {/* Search Bar */}
-      {open && (
-        <div className="px-3 mb-4 animate-in fade-in slide-in-from-left-4 duration-300">
-          <div className="relative group">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neutral-500 group-hover:text-neutral-400 transition-colors" />
-            <input
-              placeholder="Search..."
-              className="w-full h-9 rounded-lg border border-neutral-800 bg-neutral-900/50 pl-9 pr-3 text-sm text-neutral-300 placeholder:text-neutral-600 focus:border-indigo-500/50 focus:bg-neutral-900 focus:ring-1 focus:ring-indigo-500/20 outline-none transition-all"
-            />
-          </div>
-        </div>
-      )}
+
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto px-3 space-y-1 py-2">
@@ -115,11 +104,7 @@ export default function Sidebar({
       <div className="p-4 border-t border-white/5 bg-gradient-to-t from-neutral-950/50 to-transparent">
         {open ? (
           <button
-            onClick={() =>
-              document
-                .getElementById("echonotes-record-btn")
-                ?.dispatchEvent(new Event("click", { bubbles: true }))
-            }
+            onClick={() => window.dispatchEvent(new CustomEvent("open-recorder"))}
             className="group relative flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-red-900/20 hover:shadow-red-900/40 hover:scale-[1.02] active:scale-95 transition-all duration-200"
           >
             <Mic className="h-4 w-4 animate-pulse" />
@@ -127,11 +112,7 @@ export default function Sidebar({
           </button>
         ) : (
           <button
-            onClick={() =>
-              document
-                .getElementById("echonotes-record-btn")
-                ?.dispatchEvent(new Event("click", { bubbles: true }))
-            }
+            onClick={() => window.dispatchEvent(new CustomEvent("open-recorder"))}
             className="flex h-10 w-10 mx-auto items-center justify-center rounded-xl bg-gradient-to-r from-red-600 to-rose-600 text-white shadow-lg hover:shadow-red-500/30 hover:scale-105 transition-all"
             title="Start Recording"
           >
