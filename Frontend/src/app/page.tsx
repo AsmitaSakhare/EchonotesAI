@@ -36,6 +36,27 @@ interface ProcessingResult {
   language?: string;
 }
 
+const MOCK_RESULT: ProcessingResult = {
+  note_id: 99999,
+  filename: "Weekly_Sync_Demo.webm",
+  transcript: "Okay team, let's get started with the weekly sync. First item on the agenda is the new UI deployment. Sarah, what's the status?\n\nSarah: We're on track for Friday release. The tests are passing, and we just need to finalize the mobile responsiveness tweaks.\n\nGreat. Mark, can you ensure the documentation is updated by Thursday? We don't want to release without docs.\n\nMark: Sure, I'll get on that today. I might need some input from the design team on the new assets.\n\nOkay, I'll set up a meeting for you and the design lead tomorrow morning. \n\nAlso, reminder that the quarterly review is next Monday. Please have your reports ready.\n\nAnything else? No? Alright, let's get back to work. Thanks everyone.",
+  summary: "The team reviewed the upcoming UI deployment, confirming it is on track for Friday. Documentation needs to be updated by Thursday, and a coordination meeting with design will be set up. The team was also reminded about the quarterly review next Monday.",
+  key_points: [
+    "UI deployment scheduled for Friday",
+    "Mobile responsiveness tweaks are the final blocker",
+    "Documentation deadline set for Thursday",
+    "Design coordination meeting to be scheduled for tomorrow",
+    "Quarterly review reports due for next Monday"
+  ],
+  tasks: [
+    { id: 1, task: "Finalize mobile responsiveness", deadline: "2026-02-16", status: "pending" },
+    { id: 2, task: "Update documentation", deadline: "2026-02-15", status: "pending" },
+    { id: 3, task: "Prepare quarterly review reports", deadline: "2026-02-19", status: "pending" }
+  ],
+  sentiment: "Positive",
+  language: "English"
+};
+
 export default function HomePage() {
   const [activeTab, setActiveTab] = useState<"record" | "upload" | null>(null);
   const [scrollTrigger, setScrollTrigger] = useState(0);
@@ -162,6 +183,20 @@ export default function HomePage() {
     }
   };
 
+  const onSimulate = async () => {
+    setProcessing(true);
+    setStatus("Simulating upload...");
+    await new Promise(r => setTimeout(r, 800));
+    setStatus("Simulating transcription...");
+    await new Promise(r => setTimeout(r, 1000));
+    setStatus("Simulating analysis...");
+    await new Promise(r => setTimeout(r, 800));
+
+    setResult(MOCK_RESULT);
+    setStatus("Complete");
+    setProcessing(false);
+  };
+
   const onReset = () => {
     setAudioUrl(null);
     setResult(null);
@@ -273,6 +308,9 @@ export default function HomePage() {
                   </div>
                   <div className="flex justify-center gap-4 pt-4">
                     <Button variant="ghost" onClick={onReset} disabled={processing} className="text-neutral-400 hover:text-white hover:bg-white/5 px-6">Cancel</Button>
+                    <Button variant="outline" onClick={onSimulate} disabled={processing} className="border-indigo-500/30 text-indigo-300 hover:bg-indigo-500/10 hover:text-indigo-200">
+                      Mock Data
+                    </Button>
                     <Button onClick={onProcess} disabled={processing} className="bg-indigo-600 hover:bg-indigo-500 text-white min-w-[200px] h-12 text-base font-medium shadow-[0_0_20px_-5px_rgba(99,102,241,0.5)] hover:shadow-[0_0_30px_-5px_rgba(99,102,241,0.7)] transition-all rounded-xl">
                       {processing ? <><Loader2 className="mr-2 h-5 w-5 animate-spin" />{status === "Uploading audio..." ? "Uploading..." : "Processing..."}</> : <><Sparkles className="mr-2 h-5 w-5" />Process Recording</>}
                     </Button>

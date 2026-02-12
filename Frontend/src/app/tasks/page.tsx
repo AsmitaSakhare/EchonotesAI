@@ -6,18 +6,34 @@ import { apiClient } from "@/lib/api";
 import { CheckSquare, ListFilter, AlertCircle, Clock, CheckCircle2, RotateCcw, CalendarClock } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+const MOCK_TASKS: Task[] = [
+    { id: 201, task: "Review ensuring mobile responsiveness is working", deadline: new Date(Date.now() - 86400000 * 2).toISOString(), status: "pending", note_id: 101, note_filename: "Weekly_Sync_Design_Review.webm" },
+    { id: 202, task: "Update the API documentation for the new endpoints", deadline: new Date(Date.now() + 86400000 * 1).toISOString(), status: "pending", note_id: 101, note_filename: "Weekly_Sync_Design_Review.webm" },
+    { id: 203, task: "Schedule a follow-up meeting with the design lead", deadline: new Date(Date.now() + 86400000 * 3).toISOString(), status: "pending", note_id: 101, note_filename: "Weekly_Sync_Design_Review.webm" },
+    { id: 204, task: "Implement granular filters for user activity reports", deadline: new Date(Date.now() + 86400000 * 5).toISOString(), status: "pending", note_id: 102, note_filename: "Client_Feedback_Q1_Roadmap.mp3" },
+    { id: 205, task: "Export user data to CSV feature", deadline: new Date(Date.now() + 86400000 * 7).toISOString(), status: "pending", note_id: 102, note_filename: "Client_Feedback_Q1_Roadmap.mp3" },
+    { id: 206, task: "Define push notification strategy", deadline: new Date(Date.now() + 86400000 * 10).toISOString(), status: "pending", note_id: 103, note_filename: "Project_Kickoff_Mobile_App.wav" },
+    { id: 207, task: "Draft initial authentication flow diagrams", deadline: new Date(Date.now() - 86400000 * 5).toISOString(), status: "completed", note_id: 103, note_filename: "Project_Kickoff_Mobile_App.wav" },
+];
+
 export default function TasksPage() {
     const [tasks, setTasks] = useState<Task[]>([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState<"pending" | "overdue" | "due-soon" | "completed">("pending");
 
     const fetchTasks = async () => {
-        setLoading(true); // Optional: simplified loading for refresh
+        setLoading(true);
         try {
             const res = await apiClient.getTasks();
-            setTasks(res.data);
+            if (res.data && res.data.length > 0) {
+                setTasks(res.data);
+            } else {
+                console.warn("No tasks found from API, using mock data for demo.");
+                setTasks(MOCK_TASKS);
+            }
         } catch (error) {
-            console.error("Failed to fetch tasks", error);
+            console.error("Failed to fetch tasks, using mock data:", error);
+            setTasks(MOCK_TASKS);
         } finally {
             setLoading(false);
         }

@@ -15,6 +15,33 @@ interface Note {
   language?: string;
 }
 
+const MOCK_NOTES: Note[] = [
+  {
+    id: 101,
+    filename: "Weekly_Sync_Design_Review.webm",
+    summary: "Discussed the new color palette and typography. The team agreed to switch to Inter font family for better readability. Action items include updating the style guide and refactoring the button components.",
+    created_at: new Date(Date.now() - 86400000 * 2).toISOString(), // 2 days ago
+    sentiment: "Positive",
+    language: "English",
+  },
+  {
+    id: 102,
+    filename: "Client_Feedback_Q1_Roadmap.mp3",
+    summary: "Client was generally happy but requested changes to the reporting dashboard. They want more granular filters for user activity and an export to CSV feature.",
+    created_at: new Date(Date.now() - 86400000 * 5).toISOString(), // 5 days ago
+    sentiment: "Neutral",
+    language: "English",
+  },
+  {
+    id: 103,
+    filename: "Project_Kickoff_Mobile_App.wav",
+    summary: "Defined project scope and milestones for the new mobile application. Key deliverables include authentication flow, profile management, and push notifications.",
+    created_at: new Date(Date.now() - 86400000 * 10).toISOString(), // 10 days ago
+    sentiment: "Urgent",
+    language: "English",
+  }
+];
+
 export default function NotesPage() {
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,7 +58,8 @@ export default function NotesPage() {
       const response = await apiClient.getNotes();
       setNotes(response.data);
     } catch (error) {
-      console.error("Failed to fetch notes:", error);
+      console.error("Failed to fetch notes, using mock data:", error);
+      setNotes(MOCK_NOTES);
     } finally {
       setLoading(false);
     }
@@ -50,7 +78,14 @@ export default function NotesPage() {
       const response = await apiClient.searchNotes(query);
       setNotes(response.data.results);
     } catch (error) {
-      console.error("Search failed:", error);
+      console.error("Search failed, filtering mock data:", error);
+      // Fallback local search on mock data
+      const lowerQuery = query.toLowerCase();
+      const filtered = MOCK_NOTES.filter(n =>
+        n.filename.toLowerCase().includes(lowerQuery) ||
+        (n.summary && n.summary.toLowerCase().includes(lowerQuery))
+      );
+      setNotes(filtered);
     } finally {
       setSearching(false);
     }
