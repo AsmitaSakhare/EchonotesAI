@@ -8,6 +8,7 @@
 This project is the Capstone Project for **VIT Bhopal University**, developed by **Group Number 41** under the supervision of **Dr. Virendra Singh Khushwah**.
 
 **Team Members:**
+
 - **Vedika Vivek Gangil** (22BSA10001)
 - **Nihalika Kumari** (22BSA10033)
 - **Mehul Kumar** (22BSA10317)
