@@ -30,6 +30,35 @@ interface Task {
     status: string;
 }
 
+const MOCK_NOTE_ID = 99999;
+
+const MOCK_NOTE_DETAIL: NoteDetail = {
+    id: MOCK_NOTE_ID,
+    filename: "Weekly_Sync_Demo.webm",
+    transcript:
+        "Okay team, let's get started with the weekly sync. First item on the agenda is the new UI deployment. Sarah, what's the status?\n\nSarah: We're on track for Friday release. The tests are passing, and we just need to finalize the mobile responsiveness tweaks.\n\nGreat. Mark, can you ensure the documentation is updated by Thursday? We don't want to release without docs.\n\nMark: Sure, I'll get on that today. I might need some input from the design team on the new assets.\n\nOkay, I'll set up a meeting for you and the design lead tomorrow morning.\n\nAlso, reminder that the quarterly review is next Monday. Please have your reports ready.\n\nAnything else? No? Alright, let's get back to work. Thanks everyone.",
+    raw_transcript:
+        "Okay team, let's get started with the weekly sync. First item on the agenda is the new UI deployment. Sarah, what's the status?\n\nSarah: We're on track for Friday release. The tests are passing, and we just need to finalize the mobile responsiveness tweaks.\n\nGreat. Mark, can you ensure the documentation is updated by Thursday? We don't want to release without docs.\n\nMark: Sure, I'll get on that today. I might need some input from the design team on the new assets.\n\nOkay, I'll set up a meeting for you and the design lead tomorrow morning.\n\nAlso, reminder that the quarterly review is next Monday. Please have your reports ready.\n\nAnything else? No? Alright, let's get back to work. Thanks everyone.",
+    summary:
+        "The team reviewed the upcoming UI deployment, confirming it is on track for Friday. Documentation needs to be updated by Thursday, and a coordination meeting with design will be set up. The team was also reminded about the quarterly review next Monday.",
+    key_points: [
+        "UI deployment scheduled for Friday",
+        "Mobile responsiveness tweaks are the final blocker",
+        "Documentation deadline set for Thursday",
+        "Design coordination meeting to be scheduled for tomorrow",
+        "Quarterly review reports due for next Monday",
+    ],
+    sentiment: "Positive",
+    language: "English",
+    created_at: new Date().toISOString(),
+};
+
+const MOCK_NOTE_TASKS: Task[] = [
+    { id: 1, task: "Finalize mobile responsiveness", deadline: "2026-02-16", status: "pending" },
+    { id: 2, task: "Update documentation", deadline: "2026-02-15", status: "pending" },
+    { id: 3, task: "Prepare quarterly review reports", deadline: "2026-02-19", status: "pending" },
+];
+
 export default function NoteDetailPage() {
     const params = useParams();
     const router = useRouter();
@@ -55,6 +84,13 @@ export default function NoteDetailPage() {
             setTasks(tasksResponse.data);
         } catch (error) {
             console.error("Failed to fetch note details:", error);
+            if (noteId === MOCK_NOTE_ID) {
+                setNote(MOCK_NOTE_DETAIL);
+                setTasks(MOCK_NOTE_TASKS);
+            } else {
+                setNote(null);
+                setTasks([]);
+            }
         } finally {
             setLoading(false);
         }

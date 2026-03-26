@@ -23,13 +23,95 @@ const sentimentColor: Record<string, string> = {
     Urgent: "bg-amber-500/20 text-amber-400 border-amber-500/30",
 };
 
+const MOCK_NOTE_ID = 99999;
+
+const MOCK_TRANSLATIONS: Record<string, string> = {
+    Hindi: `टीम ने आगामी UI डिप्लॉयमेंट की समीक्षा की और पुष्टि की कि यह शुक्रवार तक समय पर पूरा हो जाएगा। डॉक्यूमेंटेशन को गुरुवार तक अपडेट करना आवश्यक है, और डिजाइन टीम के साथ समन्वय बैठक आयोजित की जाएगी। टीम को अगले सोमवार होने वाली तिमाही समीक्षा के बारे में भी याद दिलाया गया।
+
+मुख्य बिंदु
+• UI डिप्लॉयमेंट शुक्रवार के लिए निर्धारित है
+• मोबाइल रिस्पॉन्सिवनेस में सुधार अंतिम बाधा है
+• डॉक्यूमेंटेशन की अंतिम तिथि गुरुवार है
+• डिजाइन समन्वय बैठक कल निर्धारित की जाएगी
+• तिमाही समीक्षा रिपोर्ट अगले सोमवार तक जमा करनी है`,
+    Marathi: `टीमने आगामी UI डिप्लॉयमेंटचा आढावा घेतला आणि ते शुक्रवारपर्यंत वेळेत पूर्ण होईल याची खात्री केली। डॉक्युमेंटेशन गुरुवारपर्यंत अपडेट करणे आवश्यक आहे आणि डिझाइन टीमसोबत समन्वय बैठक आयोजित केली जाईल। टीमला पुढील सोमवार होणाऱ्या तिमाही आढाव्याचीही आठवण करून देण्यात आली।
+
+मुख्य मुद्दे
+• UI डिप्लॉयमेंट शुक्रवारसाठी नियोजित आहे
+• मोबाईल रिस्पॉन्सिव्हनेस सुधारणा ही शेवटची अडचण आहे
+• डॉक्युमेंटेशनची अंतिम मुदत गुरुवार आहे
+• डिझाइन समन्वय बैठक उद्यासाठी नियोजित केली जाईल
+• तिमाही आढावा अहवाल पुढील सोमवारपर्यंत सादर करायचा आहे`,
+    French: `L’équipe a examine le deploiement UI a venir et a confirme qu’il est en bonne voie pour vendredi. La documentation doit etre mise a jour d’ici jeudi, et une reunion de coordination avec l’equipe de design sera organisee. L’equipe a egalement ete rappelee de la revue trimestrielle prevue lundi prochain.
+
+Points Cles
+• Le deploiement UI est prevu pour vendredi
+• Les ajustements de la responsivite mobile sont le dernier blocage
+• La date limite de la documentation est fixee a jeudi
+• Une reunion de coordination avec le design sera planifiee pour demain
+• Les rapports de revue trimestrielle sont dus pour lundi prochain`,
+    Spanish: `El equipo reviso el proximo despliegue de la UI y confirmo que esta en marcha para el viernes. La documentacion debe actualizarse antes del jueves y se organizara una reunion de coordinacion con el equipo de diseno. Tambien se recordo al equipo sobre la revision trimestral del proximo lunes.
+
+Puntos Clave
+• El despliegue de la UI esta programado para el viernes
+• Los ajustes de responsividad movil son el ultimo bloqueo
+• La fecha limite de documentacion es el jueves
+• La reunion de coordinacion con diseno se programara para manana
+• Los informes de revision trimestral deben entregarse el proximo lunes`,
+};
+
+const MOCK_KEY_TAKEAWAYS: Record<string, string[]> = {
+    Hindi: [
+        "UI डिप्लॉयमेंट शुक्रवार के लिए निर्धारित है",
+        "मोबाइल रिस्पॉन्सिवनेस में सुधार अंतिम बाधा है",
+        "डॉक्यूमेंटेशन की अंतिम तिथि गुरुवार है",
+        "डिजाइन समन्वय बैठक कल निर्धारित की जाएगी",
+        "तिमाही समीक्षा रिपोर्ट अगले सोमवार तक जमा करनी है",
+    ],
+    Marathi: [
+        "UI डिप्लॉयमेंट शुक्रवारसाठी नियोजित आहे",
+        "मोबाईल रिस्पॉन्सिव्हनेस सुधारणा ही शेवटची अडचण आहे",
+        "डॉक्युमेंटेशनची अंतिम मुदत गुरुवार आहे",
+        "डिझाइन समन्वय बैठक उद्यासाठी नियोजित केली जाईल",
+        "तिमाही आढावा अहवाल पुढील सोमवारपर्यंत सादर करायचा आहे",
+    ],
+    French: [
+        "Le deploiement UI est prevu pour vendredi",
+        "Les ajustements de la responsivite mobile sont le dernier blocage",
+        "La date limite de la documentation est fixee a jeudi",
+        "Une reunion de coordination avec le design sera planifiee pour demain",
+        "Les rapports de revue trimestrielle sont dus pour lundi prochain",
+    ],
+    Spanish: [
+        "El despliegue de la UI esta programado para el viernes",
+        "Los ajustes de responsividad movil son el ultimo bloqueo",
+        "La fecha limite de documentacion es el jueves",
+        "La reunion de coordinacion con diseno se programara para manana",
+        "Los informes de revision trimestral deben entregarse el proximo lunes",
+    ],
+};
+
 export default function SummaryCard({ summary, keyPoints, sentiment = "Neutral", noteId }: SummaryCardProps) {
     const [targetLang, setTargetLang] = useState<string>("Hindi");
     const [translatedSummary, setTranslatedSummary] = useState<string | null>(null);
     const [translating, setTranslating] = useState(false);
+    const isMockMode = noteId === MOCK_NOTE_ID;
+
+    const getMockTranslation = (lang: string) => {
+        if (lang === "English") return summary;
+        return MOCK_TRANSLATIONS[lang] || null;
+    };
+    const displayKeyPoints =
+        isMockMode && targetLang !== "English"
+            ? MOCK_KEY_TAKEAWAYS[targetLang] || keyPoints
+            : keyPoints;
 
     const handleTranslate = async () => {
         if (!noteId) return;
+        if (isMockMode) {
+            setTranslatedSummary(getMockTranslation(targetLang));
+            return;
+        }
         setTranslating(true);
         try {
             const res = await apiClient.translateNote(noteId, targetLang);
@@ -65,7 +147,15 @@ export default function SummaryCard({ summary, keyPoints, sentiment = "Neutral",
                         {/* Translation Controls (Only if noteId is present) */}
                         {noteId && (
                             <div className="flex items-center gap-2">
-                                <Select value={targetLang} onValueChange={setTargetLang}>
+                                <Select
+                                    value={targetLang}
+                                    onValueChange={(value) => {
+                                        setTargetLang(value);
+                                        if (isMockMode) {
+                                            setTranslatedSummary(getMockTranslation(value));
+                                        }
+                                    }}
+                                >
                                     <SelectTrigger className="h-8 w-28 text-xs bg-neutral-800 border-neutral-700 text-neutral-300">
                                         <SelectValue placeholder="Language" />
                                     </SelectTrigger>
@@ -109,9 +199,9 @@ export default function SummaryCard({ summary, keyPoints, sentiment = "Neutral",
                 {/* Key Points Section */}
                 <div className="space-y-3">
                     <h3 className="text-sm font-medium text-neutral-500 uppercase tracking-wider">Key Takeaways</h3>
-                    {keyPoints && keyPoints.length > 0 ? (
+                    {displayKeyPoints && displayKeyPoints.length > 0 ? (
                         <ul className="grid gap-3">
-                            {keyPoints.map((point, index) => (
+                            {displayKeyPoints.map((point, index) => (
                                 <li key={index} className="flex gap-3 text-neutral-300 text-sm leading-relaxed p-3 rounded-lg bg-white/5 border border-white/5 hover:bg-white/10 transition-colors">
                                     <span className="text-indigo-400 font-bold shrink-0">•</span>
                                     <span>{point}</span>
