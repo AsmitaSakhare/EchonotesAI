@@ -39,8 +39,25 @@ export const apiClient = {
     // Tasks
     getTasks: async () => api.get("/tasks"),
     getTasksByNote: async (noteId: number) => api.get(`/tasks/note/${noteId}`),
+    createTask: async (body: {
+        task: string;
+        note_id?: number | null;
+        deadline?: string | null;
+        priority?: string;
+        assignee?: string | null;
+        board_column?: string;
+    }) => api.post("/tasks", body),
+    updateTask: async (taskId: number, patch: Record<string, unknown>) =>
+        api.patch(`/tasks/${taskId}`, patch),
     updateTaskStatus: async (taskId: number, status: string) =>
         api.patch(`/tasks/${taskId}`, { status }),
+    deleteTask: async (taskId: number) => api.delete(`/tasks/${taskId}`),
+    getTaskAnalytics: async () => api.get("/tasks/analytics/summary"),
+
+    // Whiteboard (diagrams.net / draw.io XML)
+    getWhiteboard: async () => api.get("/whiteboard"),
+    saveWhiteboard: async (diagram_xml: string) =>
+        api.put("/whiteboard", { diagram_xml }),
 
     // Voice Commands
     processVoiceCommand: async (command: string, noteId: number) =>

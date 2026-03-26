@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
 from database import init_db
-from routes import transcribe_router, notes_router, tasks_router, commands_router
+from routes import transcribe_router, notes_router, tasks_router, commands_router, whiteboard_router
 
 # Load environment variables
 load_dotenv()
@@ -39,6 +39,7 @@ app.include_router(transcribe_router, tags=["Transcription"])
 app.include_router(notes_router, tags=["Notes"])
 app.include_router(tasks_router, tags=["Tasks"])
 app.include_router(commands_router, tags=["Voice Commands"])
+app.include_router(whiteboard_router, tags=["Whiteboard"])
 
 # Health check endpoint
 @app.get("/")

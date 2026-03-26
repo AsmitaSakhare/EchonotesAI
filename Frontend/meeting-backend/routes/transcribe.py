@@ -74,7 +74,9 @@ async def transcribe_meeting(
                 note_id=note.id,
                 task=task_data.get("task", ""),
                 deadline=task_data.get("deadline"),
-                status="pending"
+                status="pending",
+                priority="medium",
+                board_column="todo",
             )
             db.add(task)
             created_tasks.append({

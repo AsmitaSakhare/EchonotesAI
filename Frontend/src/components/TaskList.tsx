@@ -7,15 +7,9 @@ import { apiClient } from "@/lib/api";
 import { useState } from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import type { EchoTask } from "@/types/task";
 
-export interface Task {
-    id: number;
-    task: string;
-    deadline: string | null;
-    status: string;
-    note_id?: number;
-    note_filename?: string;
-}
+export type Task = EchoTask;
 
 interface TaskListProps {
     tasks: Task[];
@@ -42,8 +36,9 @@ export default function TaskList({ tasks, onTaskUpdate }: TaskListProps) {
         }
     };
 
-    const isOverdue = (deadline: string | null, status: string) => {
-        if (!deadline || status === "completed") return false;
+    const isOverdue = (deadline: string | null, task: Task) => {
+        if (!deadline || task.status === "completed" || task.board_column === "done")
+            return false;
         const deadlineDate = new Date(deadline);
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -70,8 +65,9 @@ export default function TaskList({ tasks, onTaskUpdate }: TaskListProps) {
                 {tasks && tasks.length > 0 ? (
                     <div className="space-y-3">
                         {tasks.map((task) => {
-                            const overdue = isOverdue(task.deadline, task.status);
-                            const completed = task.status === "completed";
+                            const overdue = isOverdue(task.deadline, task);
+                            const completed =
+                                task.status === "completed" || task.board_column === "done";
 
                             return (
                                 <div
@@ -107,6 +103,32 @@ export default function TaskList({ tasks, onTaskUpdate }: TaskListProps) {
                                         </p>
 
                                         <div className="flex flex-wrap items-center gap-3">
+                                            {(task.priority || task.assignee) && (
+                                                <div className="flex flex-wrap gap-1.5">
+                                                    {task.priority && (
+                                                        <span
+                                                            className={cn(
+                                                                "text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-full border",
+                                                                task.priority === "urgent" &&
+                                                                    "text-rose-400 bg-rose-500/10 border-rose-500/20",
+                                                                task.priority === "high" &&
+                                                                    "text-orange-400 bg-orange-500/10 border-orange-500/20",
+                                                                task.priority === "low" &&
+                                                                    "text-slate-400 bg-slate-500/10 border-slate-500/20",
+                                                                (task.priority === "medium" || !task.priority) &&
+                                                                    "text-indigo-300 bg-indigo-500/10 border-indigo-500/20"
+                                                            )}
+                                                        >
+                                                            {task.priority}
+                                                        </span>
+                                                    )}
+                                                    {task.assignee && (
+                                                        <span className="text-[10px] text-neutral-500">
+                                                            @{task.assignee}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            )}
                                             {task.deadline && (
                                                 <div className={cn(
                                                     "flex items-center gap-1.5 text-xs font-medium rounded-full px-2 py-0.5 border",
